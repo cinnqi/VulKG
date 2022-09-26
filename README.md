@@ -62,9 +62,9 @@ There is a lot of work to be done before visualizing the knowledge graph.
    |   happened scenario: 64   |   happened scenario: 9   |
    
 
-   After adjusting the parameters and countless times of training, finally the model performance as below:
+   After adjusting the parameters and countless times of training, finally after 20 epochs the model performance as below:
 
-   ![image-20210506125621583](https://github.com/cinnqi/Neo4j-D3-VKG/blob/main/images/image-20210506125621583.png)
+   ![image-20210506125621583](https://github.com/cinnqi/Neo4j-D3-VKG/blob/main/images/results.png)
 
 4. import data into Neo4j
 
