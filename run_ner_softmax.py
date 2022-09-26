@@ -77,7 +77,7 @@ def train(args, train_dataset, model, tokenizer):
             optimizer.step()
             scheduler.step()  # Update learning rate schedule
             model.zero_grad()
-        print('第{}epoch的loss为{}'.format(epoch, total_loss/steps))
+        print('epoch{} loss: {}'.format(epoch, total_loss/steps))
         if epoch > 0:
             eval_info = evaluate(args,model,tokenizer)
             eval_f = eval_info['f1']
@@ -98,7 +98,7 @@ def train(args, train_dataset, model, tokenizer):
                 torch.save(scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
                 with open('best_epoch.txt','w',encoding='utf8') as f:
                     f.write(str(epoch))
-        print("训练完毕")
+        print("train finish")
         if 'cuda' in str(args.device):
             torch.cuda.empty_cache()
     # return global_step, tr_loss / global_step
@@ -394,7 +394,7 @@ def main():
     model = model_class.from_pretrained(args.model_path,config=config)
 
     model.to(args.device)
-    print('模型加载完毕')
+    print('model load finish')
     if args.do_train:
         train_dataset = load_and_cache_examples(args, args.task_name,tokenizer, data_type='train')
         train(args, train_dataset, model, tokenizer)
@@ -422,7 +422,7 @@ def main():
     if args.do_predict:
         tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name)
         checkpoints = [os.path.join(args.output_dir, path) for path in os.listdir(args.output_dir)]
-        checkpoints = ["E:\python_project\CVE\ner\ccks-ner\outputs\ccks_crf\bert\best_checkpoint"]
+        checkpoints = ["C:/Users/I572410/Desktop/Cinqi/python_project/CVE_TEST/ner/cve-ner/outputs/cve_softmax/bert/best_checkpoint"]
 
         for checkpoint in checkpoints:
             model = model_class.from_pretrained(checkpoint)
