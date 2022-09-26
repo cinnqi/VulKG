@@ -1,0 +1,2979 @@
+<!DOCTYPE html>
+<html>
+	<!---->
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Vulnerability Knowledge Graph(Author：Xingqi,Cheng.)</title>
+		<meta name="description" content="漏洞可视化系统，能够显示漏洞关联信息并提供搜索功能" />
+		<meta name="keywords" content="" />
+		<meta name="author" content="" />
+		<link rel="shortcut icon" href="">
+		
+		<!--	-->
+		<script src="https://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+		<link href="https://cdn.bootcss.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+		<script src="https://cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/graph.css" />
+
+	</head>
+
+	
+<style>
+	/*body的样式*/
+	body {
+		background-color: #272b30;   /*背景颜色*/
+		padding-bottom: 30px, 40px;
+		text-align: center;
+		font-family: OpenSans-Light, PingFang SC, Hiragino Sans GB, Microsoft Yahei, Microsoft Jhenghei, sans-serif, Simsun;
+	}
+	
+	/*之前在js代码里面定义了classes，这边就给这些写样式*/
+	.links line {
+		stroke: rgb(240, 240, 240); /*线的颜色*/
+		stroke-opacity: 0.8;        /*线的透明度*/
+	}
+	.links line.inactive {
+		display: none !important;
+
+	}
+	.links line.enterinactive {
+		stroke-opacity: 0.2;
+
+	}
+	
+	.linetexts {
+		fill-opacity: 0;
+		font-size: 12px ;
+		/*font-family: SimSun;*/
+		font-family: Arial;
+		fill:#fff;
+	}
+	.linetexts.inactive {
+		display: none !important;
+	}
+	
+	.nodes circle {
+		stroke: #fff;
+		stroke-width: 2px;        /*圆的描边宽度*/
+	}
+	.nodes circle:hover {
+		cursor: pointer;
+	}
+	.nodes circle.inactive {
+		display: none !important;
+		
+	}
+
+	.nodes circle.enterinactive {
+		
+		opacity:0.2;
+	}
+	
+	/*默认显示所有的圆圈，进入模式切换之后才会显示text*/
+	.texts text {
+		display: none;
+	}
+	.texts text:hover {
+		cursor: pointer;
+	}
+	.texts text.inactive {
+		display: none !important;
+		/*stroke-opacity: 0;*/
+	}
+	.texts text.enterinactive {
+		
+		opacity:0.2;
+	}
+	
+	.footer{
+	height: 30px;
+	line-height: 35px;
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	text-align: center;
+	/*background-color: #272b30;*/
+	color: #fff;
+	font-family: Arial;
+	font-size: 14px;
+	letter-spacing: 1px;
+    }
+
+	.links{
+	height: 30px;
+	line-height: 35px;
+
+	bottom: 0;
+	width: 100%;
+	text-align: right;
+	/*background-color: #272b30;*/
+	
+	color: #fff;
+	font-family: Arial;
+	font-size: 14px;
+	letter-spacing: 1px;
+    }
+
+	
+	/*indicator的样式*/
+	#indicator {
+		position: absolute;
+		left: 30px;
+		bottom: 252px;
+		text-align: left;
+		color: #f2f2f2;
+		font-size: 15px;
+	}
+	
+	/*indicator中每一个小的div/色块/图例的样式*/
+	#indicator>div {
+		margin-bottom: 10px; 
+	}
+	
+	#indicator span {
+		display: inline-block;
+		width: 35px;
+		height: 20px;
+		position: relative;
+		top: 2px;
+		margin-right: 8px;
+	}
+	
+	/*mode-模式切换的style*/
+	#mode {
+		position: absolute;
+		top: 100px;
+		left: 30px;
+	}
+	
+	#mode span {
+		display: inline-block;
+		border: 1px solid #fff;
+		color: #fff;
+		padding: 6px 10px;
+		border-radius: 4px;
+		font-size: 14px;
+		transition: color, background-color .3s; /*CSS3中的渐变*/
+		-o-transition: color, background-color .3s;
+		-ms-transition: color, background-color .3s;
+		-moz-transition: color, background-color .3s;
+		-webkit-transition: color, background-color .3s;
+	}
+	
+	/*当按键处于激活状态的时候*/
+	#mode span.active {
+		background-color: #fff;
+		color: #333;
+		cursor: pointer;
+	}
+	
+	/*当按键处于鼠标悬浮状态的时候*/
+	#mode span:hover {
+		background-color: #aaa;
+		color: #333;
+		cursor: pointer;
+	}
+	
+	/*switch1-菜品大类实体显示开关切换的style*/
+	#switch1 {
+		position: absolute;
+		top: 240px;
+		left: 200px;
+	}
+	
+	#switch1 span {
+		display: inline-block;
+		border: 1px solid #fff;
+		color: #fff;
+		padding: 3px 10px;
+		border-radius: 4px;
+		font-size: 12px;
+		transition: color, background-color .3s; /*CSS3中的渐变*/
+		-o-transition: color, background-color .3s;
+		-ms-transition: color, background-color .3s;
+		-moz-transition: color, background-color .3s;
+		-webkit-transition: color, background-color .3s;
+	}
+	
+	/*当按键处于激活或者鼠标悬浮状态的时候*/
+	#switch1 span.active, #switch1 span:hover {
+		background-color: #fff;
+		color: #333;
+		cursor: pointer;
+	}
+	
+	/*switch2-菜品大类实体显示开关切换的style*/
+	#switch2 {
+		position: absolute;
+		top: 275px;
+		left: 200px;
+	}
+	
+	#switch2 span {
+		display: inline-block;
+		border: 1px solid #fff;
+		color: #fff;
+		padding: 3px 10px;
+		border-radius: 4px;
+		font-size: 12px;
+		transition: color, background-color .3s; /*CSS3中的渐变*/
+		-o-transition: color, background-color .3s;
+		-ms-transition: color, background-color .3s;
+		-moz-transition: color, background-color .3s;
+		-webkit-transition: color, background-color .3s;
+	}
+	
+	/*当按键处于激活或者鼠标悬浮状态的时候*/
+	#switch2 span.active, #switch2 span:hover {
+		background-color: #fff;
+		color: #333;
+		cursor: pointer;
+	}
+	
+	/*switch3-菜品大类实体显示开关切换的style*/
+	#switch3 {
+		position: absolute;
+		top: 310px;
+		left: 200px;
+	}
+	
+	#switch3 span {
+		display: inline-block;
+		border: 1px solid #fff;
+		color: #fff;
+		padding: 3px 10px;
+		border-radius: 4px;
+		font-size: 12px;
+		transition: color, background-color .3s; /*CSS3中的渐变*/
+		-o-transition: color, background-color .3s;
+		-ms-transition: color, background-color .3s;
+		-moz-transition: color, background-color .3s;
+		-webkit-transition: color, background-color .3s;
+	}
+	
+	/*当按键处于激活或者鼠标悬浮状态的时候*/
+	#switch3 span.active, #switch3 span:hover {
+		background-color: #fff;
+		color: #333;
+		cursor: pointer;
+	}
+	
+	/*info的样式*/
+	
+	
+	/*tips的样式*/
+	#tips {
+		position: absolute;
+		left: 30px;
+		right: 10px;
+		top: 350px;
+		text-align: left;
+		color: #f2f2f2;
+		font-size: 12px;
+		width:230px;
+	}
+
+	/*count的样式*/
+	#count {
+		position: absolute;
+		bottom: 500px;
+		right: 25px;
+		text-align: right;
+		width: 200px;
+		color: #fff;
+		font-size: 18px;
+	}
+
+
+	
+	#count h4 {
+		color: #fff;
+		}
+	/*indicator中每一个小的div/色块/图例的样式*/
+	#tips>div {
+		margin-bottom: 5px; 
+	}
+	
+	#tips span {
+		display: inline-block;
+		width: 60px;
+		height: 20px;
+		position: relative;
+		top: 2px;
+		margin-right: 8px;
+		font-size: 16px;
+	}
+
+	
+	/*搜索框的样式*/
+	#search input {
+		position: absolute;
+		top: 150px;
+		left: 30px;
+		color: #fff;
+		border: none;
+		outline: none;
+		box-shadow: none;
+		width: 200px;
+		background-color: #666;
+	}
+	
+	</style>
+	<body>
+		<!-- 绘制标题样式 -->
+		<h1 style="color:#fff;font-size:30px;margin-bottom:10px;text-align:center;margin-left:40px;">Vulnerability Knowledge Graph</h1>
+		<!-- 第一个布局 绘制知识图谱主图 -->
+		<div style="text-align: center; position:relative;">
+			
+			<svg width="900" height="600" style="margin-right:0px;margin-bottom:-40px;" id="svg1">
+			</svg>
+			<!--
+			<svg width="860" height="560" style="margin-left: 30px;margin-bottom: -150px" id="svg1"></svg>-->
+			<!-- 绘制图例 -->
+			<div id="indicator">
+			</div>
+			<!-- 绘制模式选择 -->
+			<div id="mode">
+				<span class="active" style="border-top-right-radius:0;border-bottom-right-radius:0;">Circle</span>
+				<span
+					style="border-top-left-radius:0;border-bottom-left-radius:0;position:relative;left:-5px;">Text</span>
+			</div>
+
+			<!-- 显示切换1 -->
+			<div id="switch1">
+				<span class="active" style="border-top-right-radius: 0;border-bottom-right-radius: 0;">On</span>
+				<span style="border-top-left-radius: 0;border-bottom-left-radius: 0;position: relative;left: -5px;">Off</span>
+			</div>
+	
+			<!-- 显示切换2 -->
+				<div id="switch2">
+					<span class="active" style="border-top-right-radius: 0;border-bottom-right-radius: 0;">On</span>
+					<span style="border-top-left-radius: 0;border-bottom-left-radius: 0;position: relative;left: -5px;">Off</span>
+				</div>
+		
+			<!-- 显示切换3 -->
+				<div id="switch3">
+					<span class="active" style="border-top-right-radius: 0;border-bottom-right-radius: 0;">On</span>
+					<span style="border-top-left-radius: 0;border-bottom-left-radius: 0;position: relative;left: -5px;">Off</span>
+				</div>
+			<!-- 绘制搜索框 -->
+			<div id="search">
+				<input type="text" autocomplete="off" class="form-control">
+			</div>
+			<!-- 绘制右边显示结果 -->
+			<div id="info">
+				<h4></h4>
+			</div>
+			<!-- 提示 -->
+			<div id="tips"></div>
+			<!-- 计数 -->
+			<div id="count">
+				<h4></h4>
+			</div>
+
+			<div class="links">
+			<a href="https://github.com/cinnqi/Neo4j-D3-VKG/tree/master">Project page</a><br/>	
+			</div>
+			
+			<div class="footer">
+				<p>Copyright©2021 by Xingqi,Cheng. All Rights Reserved</p>
+									
+			</div>
+		</div>
+		
+		<!-- 增加D3元素库 -->
+		<script src="js/d3.v4.min.js"></script>
+		<!-- 绘制图例 -->
+		<script type="text/javascript">
+			$(document).ready(function() {
+				// 定义svg变量将布局svg1选出来
+				var svg = d3.select("#svg1"),
+					width = svg.attr("width"),
+					height = svg.attr("height");
+				// 自定义图标及颜色（数组保证一一对应）
+				// names		图例名称变量制作图标
+				// labels		节点的标签名称（与records.json中保证相同）
+				// colors		图例颜色
+				// url 			json文件的路径#55ffff
+				var names = ['CVE ID','CWE ID','Extracted INFO','Keys']
+				var labels = ['CVE ID','CWE ID','cause','score','consequence','location','happened scenario','version','triggering operation','related issue','commit id','project','publish date','attacker','update date','vulnerability classification']
+				//var properties=['cve_id','cwe_id','cause','score','consequence','location','happened_scenario','version','triggering_operation','related_issue','commit_id','project','publish_date','attacker','update_date','vulnerability_classification']
+				var colors = ['#ca635f','#99CCFF','#FFCC00','#99CC99','#FFCC00','#FFCC00','#FFCC00','#FFCC00','#FFCC00','#FFCC00','#99CC99','#99CC99','#99CC99','#FFCC00','#99CC99','#99CC99']
+				var url = 'data/records1000.json'
+
+				// 背景颜色设置 补充CSS样式设置字体布局
+				for (var i = 0; i < names.length; i++) {
+					$('#indicator').append("<div><span style='background-color:" + colors[i] + "'></span>" + names[i] +
+						"</div>")
+				}
+				//var help = ['小助手', '1.开始如果没有节点和边的网状可视化显示，刷新便可出现', '2.鼠标放置在任意节点上，出现和此节点相关的所有节点及之间的关系，右侧自动呈现该节点相关信息', '3.搜索框中输入关键词，呈现此关键词所有相关节点，并且此时鼠标位于某个节点上方时移开鼠标能够保持知识图谱当前状态', '4.模式切换按钮可切换对节点的不同可视化表示，结点或是文字', '5.左侧不同颜色的条形表示不同类型的节点，On/Off切换开关可打开或关闭同样类型所有节点的可视化显示'];
+    			var help = ['TIPS', '1.If there is no visualization of Graph, refresh will appear.', '2.Place the mouse on any node, all the nodes related to this node and their relationship will appear', 
+				'3.Enter a keyword in the search box to display all related nodes of this keyword',
+				'4.Extracted INFO: information extracted from unstructured text(CVE summary)','Keys: information from structured text',
+				'5.All the information is from "http://cve.mitre.org/"'];
+				$('#tips').append("<div><span>" + help[0] + "</span></div>")
+    			for (var i = 1; i < help.length; i++) {
+        			$('#tips').append("<div>" + help[i] +"</div>")
+    			}
+				
+
+				// 利用d3.forceSimulation()定义关系图 包括设置边link、排斥电荷charge、关系图中心点
+				var simulation = d3.forceSimulation()
+					.force("link", d3.forceLink().id(d => {
+						// console.log(d)
+						return d.id
+					}))
+					.force("charge", d3.forceManyBody())
+					.force("center", d3.forceCenter(width / 2, height / 2))
+					.force("collision", d3.forceCollide(20)) // 碰撞检测
+				// 图数据
+				var graph
+				let nodes = []
+				let links = [] // 存放节点和关系
+				let nodeSet = [] // 存放去重后nodes的id
+				//d3.json获取数据
+				d3.json(url, function(error, data) {
+					if (error) throw error
+					graph = data
+					console.log(graph[0].p)
+					for (let item of graph) {
+						for (let segment of item.p.segments) {
+							// 重新更改data格式
+							if (nodeSet.indexOf(segment.start.identity) == -1) {
+								nodeSet.push(segment.start.identity)
+								nodes.push({
+									id: segment.start.identity,
+									label: segment.start.labels[0],
+									properties: segment.start.properties,
+	
+								})
+							}
+							if (nodeSet.indexOf(segment.end.identity) == -1) {
+								nodeSet.push(segment.end.identity)
+								nodes.push({
+									id: segment.end.identity,
+									label: segment.end.labels[0],
+									properties: segment.end.properties
+								})
+							}
+							links.push({
+								source: segment.relationship.start,
+								target: segment.relationship.end,
+								type: segment.relationship.type,
+								properties: segment.relationship.properties
+							})
+						}
+					}
+					console.log(nodes)
+					console.log(links)
+					console.log(links.length)
+					console.log(nodes.length)
+					var countnodes = nodes.length
+					var countlinks = links.length
+					$('#count').append("<div><span>" + "There are "+ countnodes + " nodes " + "and " + countlinks + " links in total "+ "</span></div>")
+					// D3映射数据至HTML中
+					// g用于绘制所有边,selectALL选中所有的line,并绑定数据data(graph.links),enter().append("line")添加元素
+					// 数据驱动文档,设置边的粗细
+					var link = svg.append("g")
+						.attr("class", "links")
+						.selectAll("line")
+						.data(links)
+						.enter()
+						.append("line")
+						.attr("stroke-width", function(d) {
+							// 每次访问links的一项数据
+							return 1.5 //所有线宽度均为2
+						});
+
+					//边上的文字（实体之间的关系） 
+					var linktext = svg.append('g')
+					.attr("class", "linetexts")
+					.selectAll("text")
+					.data(links)
+					.enter()
+					.append("text")
+					// .attr("font-size", function(d) {
+					// 	return 20
+
+					// })
+					.style("display","block")
+					.style("color","red")
+					.text(function(d){				
+						return d.type;
+					});
+
+					// 添加所有的点
+					// selectAll("circle")选中所有的圆并绑定数据,圆的直径为d.size
+					// 再定义圆的填充色,同样数据驱动样式,圆没有描边,圆的名字为d.id
+					// call()函数：拖动函数,当拖动开始绑定dragstarted函数，拖动进行和拖动结束也绑定函数
+					var node = svg.append("g").attr("class", "nodes").selectAll("circle").data(nodes).enter()
+						.append("circle").attr("r", function(d) {
+							// 每次访问nodes的一项数据
+							// console.log(d)
+							let size = 20
+							switch (d.label) {
+								case labels[0]:
+									break;
+								case labels[1]:
+									size = 15;
+									break;
+								case labels[2]:
+									size = 13;
+									break;
+								default:
+									size = 13;
+									break;
+							}
+							return size
+						}).attr("fill", function(d) {
+							for (let i = 0;i < labels.length;i++) {
+								if (d.label === labels[i]) return colors[i]
+							}
+							
+						}).attr("stroke", "none")
+						.attr('name', function(d) {
+						for (var key in d.properties)
+						{
+							//console.log(d.properties)
+							return d.properties[key]
+						}
+						//return d.properties.name;			
+						})
+						.attr("id", d => d.id)
+						.call(d3.drag()
+							.on("start", dragstarted)
+							.on("drag", dragged)
+							.on("end", dragended)
+						);
+
+					//显示所有的文本
+					//设置大小、填充颜色、名字、text()设置文本
+					//attr("text-anchor", "middle")设置文本居中
+					var text = svg.append("g")
+					    .attr("class", "texts")
+						.selectAll("text")
+						.data(nodes)
+						.enter()
+						.append("text")
+						.attr("font-size", function(d) {
+							let size = 20
+							switch (d.label) {
+								case labels[0]:
+									break;
+								case labels[1]:
+									size = 15;
+									break;
+								case labels[2]:
+									size = 12;
+									break;
+								default:
+									size = 12;
+									break;
+							}
+							return size
+						}).attr("fill", function(d) {
+							for (let i = 0;i < labels.length;i++) {
+								if (d.label === labels[i]) return colors[i]
+							}
+						})
+						.attr('name', function(d) {
+							for (var key in d.properties)
+							{
+								return d.properties[key]
+							}
+							//return d.properties.name;
+						})
+						.attr("id", d => d.id)
+						.text(function(d) {
+							for (var key in d.properties)
+							{
+								return d.properties[key]
+							}
+							return d.properties.name;
+						})
+						//.attr('text-anchor', 'middle')
+						.call(d3.drag()
+							.on("start", dragstarted)
+							.on("drag", dragged)
+							.on("end", dragended));
+
+					// 圆增加title,当鼠标悬浮在圆上时
+					node.append("title").text(function(d) {
+						for (var key in d.properties)
+							{
+								return d.properties[key]
+							}
+						})
+
+					// 处理缩放
+					svg.call(d3.zoom()
+            			.scaleExtent([1 / 8, 8])
+            			.on("zoom", zoomed));
+         
+        			function zoomed() {
+            			link.attr("transform", d3.event.transform);
+            			node.attr("transform", d3.event.transform);
+            			text.attr("transform", d3.event.transform);
+            			linktext.attr('transform', d3.event.transform);
+        			}
+
+
+					// simulation中ticked数据初始化并生成图形
+					simulation.nodes(nodes).on("tick", ticked);
+
+					simulation.force("link")
+						.links(links)
+						.distance(d => { //每一边的长度
+							let distance = 10
+							switch (d.source.label) {
+								case labels[0]:
+									distance += 80;
+									break;
+								case labels[1]:
+									distance += 60;
+									break;
+								case labels[2]:
+									distance += 60;
+									break;
+								default:
+									distance += 60;
+									break;
+							}
+							switch (d.target.label) {
+								case labels[0]:
+									distance += 80;
+									break;
+								case labels[1]:
+									distance += 60;
+									break;
+								case labels[2]:
+									distance += 60;
+									break;
+								default:
+									distance += 60;
+									break;
+							}
+							return distance
+						});
+
+					// ticked()函数确定link线的起始点x、y坐标 node确定中心点 文本通过translate平移变化
+					function ticked() {
+						link
+							.attr("x1", function(d) {
+								return d.source.x;
+							})
+							.attr("y1", function(d) {
+								return d.source.y;
+							})
+							.attr("x2", function(d) {
+								return d.target.x;
+							})
+							.attr("y2", function(d) {
+								return d.target.y;
+							});
+
+						linktext.attr("dx",function(d){ return (d.source.x + d.target.x) / 2 ; });
+            			linktext.attr("dy",function(d){ return (d.source.y + d.target.y) / 2 ; });
+
+						node
+							.attr("cx", function(d) {
+								return d.x;
+							})
+							.attr("cy", function(d) {
+								return d.y;
+							});
+						text
+                			.attr("dx", function(d) {
+                    			return d.x;
+                			})
+                			.attr("dy", function(d) {
+                    			return d.y;
+                			});
+						// text.attr('transform', function(d) {
+						// 	let size = 15
+						// 	switch (d.label) {
+						// 		case labels[0]:
+						// 			break;
+						// 		case labels[1]:
+						// 			size = 14;
+						// 			break;
+						// 		case labels[2]:
+						// 			size = 13;
+						// 			break;
+						// 		default:
+						// 			size = 12;
+						// 			break;
+						// 	}
+						// 	return 'translate(' + (d.x - size / 2) + ',' + (d.y + size / 2) + ')';
+						// });
+						     
+					}
+				});
+				// 拖动函数代码
+				var dragging = false;
+				// 开始拖动并更新相应的点
+				function dragstarted(d) {
+					if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+					d.fx = d.x;
+					d.fy = d.y;
+					dragging = true;
+				}
+				// 拖动进行中
+				function dragged(d) {
+					d.fx = d3.event.x;
+					d.fy = d3.event.y;
+				}
+				// 拖动结束
+				function dragended(d) {
+					if (!d3.event.active) simulation.alphaTarget(0);
+					d.fx = null;
+					d.fy = null;
+					dragging = false;
+				}
+				// span点击事件
+				$('#mode span').click(function(event) {
+					//span都设置为不激活状态
+					$('#mode span').removeClass('active');
+					//点击的span被激活
+					$(this).addClass('active');
+					//text隐藏 nodes显示
+					if ($(this).text() == 'Circle') {
+						$('.texts text').hide();
+						$('.nodes circle').show();
+					} else {
+						$('.texts text').show();
+						$('.nodes circle').hide();
+					}
+				});
+
+				// 三个开关标志，True表示打开
+				var sw1 = true;
+    			var sw2 = true;
+    			var sw3 = true;
+				//
+				// 处理开关1点击后的事件(这些元素页面上本来有)
+				$('#switch1 span').click(function(event) {
+				// 把mode里面所有span的active全部去掉
+				// 把被点击的这个设置为active
+				$('#switch1 span').removeClass('active')
+				$(this).addClass('active')
+
+				if ($(this).text() == 'On') 
+				{
+				sw1 = true;
+				d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+				//节点处理
+				d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+
+				// 当前选中类型实体显示
+				for (var key in d.properties)
+					{
+						//console.log(key)
+						if (key == "cve_id") 
+						{
+							//console.log(key)
+							return '';
+						}
+						if (key == "cwe_id" && sw1 == true) 
+						{
+							//console.log(key)
+							return '';
+						}
+						else if ( (key == "version" || key=="location" ||
+								   key == "consequence" || key=="happened_scenario" ||
+								   key == "cause" || key=="triggering_operation" ||
+								   key == "related_issue" || key=="attacker" ) 
+								   && sw2 == true){
+		    				return '';
+						}
+						else if ( (key == "update_date" || key=="publish_date" ||
+								   key == "score" || key=="project" ||
+								   key == "vulnerability_classification" || key=="commit_id" 
+								   ) 
+								   && sw3 == true){
+		    				return '';
+						}
+						else{
+							return 'inactive'
+							}																			
+					}				
+				});
+				d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+			 	}
+				 else{
+					sw1 = false;
+					d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+
+
+				 }
+
+			});
+
+				// 处理开关2点击后的事件(这些元素页面上本来有)
+				$('#switch2 span').click(function(event) {
+				// 把mode里面所有span的active全部去掉
+				// 把被点击的这个设置为active
+				$('#switch2 span').removeClass('active')
+				$(this).addClass('active')
+
+				if ($(this).text() == 'On') 
+				{
+				sw2 = true;
+				//节点处理
+				d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+				d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+
+				// 当前选中类型实体显示
+				for (var key in d.properties)
+					{
+						//console.log(key)
+						if (key == "cve_id") 
+						{
+							//console.log(key)
+							return '';
+						}
+						if (key == "cwe_id" && sw1 == true) 
+						{
+							//console.log(key)
+							return '';
+						}
+						else if ( (key == "version" || key=="location" ||
+								   key == "consequence" || key=="happened_scenario" ||
+								   key == "cause" || key=="triggering_operation" ||
+								   key == "related_issue" || key=="attacker" ) 
+								   && sw2 == true){
+		    				return '';
+						}
+						else if ( (key == "update_date" || key=="publish_date" ||
+								   key == "score" || key=="project" ||
+								   key == "vulnerability_classification" || key=="commit_id" 
+								   ) 
+								   && sw3 == true){
+		    				return '';
+						}
+						else{
+							return 'inactive'
+							}																			
+					}				
+				});
+				d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+			 	}
+				 else{
+					sw2 = false;
+					d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+
+				 }
+
+			});
+				// 处理开关3点击后的事件(这些元素页面上本来有)
+				$('#switch3 span').click(function(event) {
+				// 把mode里面所有span的active全部去掉
+				// 把被点击的这个设置为active
+				$('#switch3 span').removeClass('active')
+				$(this).addClass('active')
+
+				if ($(this).text() == 'On') 
+				{
+				sw3 = true;
+				//节点处理
+				d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+				d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+
+				// 当前选中类型实体显示
+				for (var key in d.properties)
+					{
+						//console.log(key)
+						if (key == "cve_id") 
+						{
+							//console.log(key)
+							return '';
+						}
+						if (key == "cwe_id" && sw1 == true) 
+						{
+							//console.log(key)
+							return '';
+						}
+						else if ( (key == "version" || key=="location" ||
+								   key == "consequence" || key=="happened_scenario" ||
+								   key == "cause" || key=="triggering_operation" ||
+								   key == "related_issue" || key=="attacker" ) 
+								   && sw2 == true){
+		    				return '';
+						}
+						else if ( (key == "update_date" || key=="publish_date" ||
+								   key == "score" || key=="project" ||
+								   key == "vulnerability_classification" || key=="commit_id" 
+								   ) 
+								   && sw3 == true){
+		    				return '';
+						}
+						else{
+							return 'inactive'
+							}																			
+					}				
+				});
+				d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+			 	}
+				 else{
+					sw3 = false;
+					d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+
+				 }
+
+			});
+				// 设置鼠标选中节点显示，并循环设置与选中节点相关联的节点显示
+				// 为svg1父元素下的.nodes circle元素绑定鼠标进入事件
+				$('#svg1').on('mouseenter', '.nodes circle', function(event) {
+					// console.log(event)
+					// 通过变量dragging保证拖动鼠标时，其状态不受影响，从而改变图形
+					// 鼠标没有拖动才能处理事件
+					if (!dragging) {
+						// 获取被选中元素的名字
+						var name = $(this).attr("name");
+						var t1 = true;
+						var t2 = true;
+						var t3 = true;
+						//console.log(name)
+						var id = $(this).attr("id");
+						// 设置#info h4样式的颜色为该节点的颜色，文本为该节点name
+						// $(this).attr('fill')表示当前悬浮圆的填充色
+						$('#info h4').css('color', $(this).attr('fill')).text(name);
+						// 每次点击添加属性前把上次显示的信息去除，否则会不断叠加
+						$('#info p').remove();
+						// 遍历查找id对应的属性
+						for (let item of nodes) {
+							if (item.id == id) {
+								for (var key in item.properties)
+									//显示值及其字段名字
+									$('#info').append('<p><span>' + key + '</span>' + item.properties[key] +
+										'</p>');
+							}
+						}
+						// 选择#svg1 .nodes中所有的circle，再增加个class
+						d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d) {
+							for(let item of nodes){
+								if(item.id == id){
+									for (var key in item.properties)
+									{
+										if (d.properties[key] == name) 
+											{
+						    						return '';
+							 				}
+										else{
+											for (var i = 0; i < links.length; i++) 
+											{
+												if (sw1==false&&sw2==true&&sw3==true)
+												{
+													var t1=false;
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key!=='cwe_id'){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key!=='cwe_id'){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==false&&sw3==true)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key !== "version" && key!=="location" &&
+										key !== "consequence" && key!=="happened_scenario" &&
+										key !== "cause" && key!=="triggering_operation" &&
+										key !== "related_issue" && key!=="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key !== "version" && key!=="location" &&
+										key !== "consequence" && key!=="happened_scenario" &&
+										key !== "cause" && key!=="triggering_operation" &&
+										key !== "related_issue" && key!=="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==true&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key !== "update_date" && key!=="publish_date" &&
+										key !== "score" && key!=="project" &&
+										key !== "vulnerability_classification" && key!=="commit_id" 
+										){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key !== "update_date" && key!=="publish_date" &&
+										key !== "score" && key!=="project" &&
+										key !== "vulnerability_classification" && key!=="commit_id" 
+										){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==false&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "cwe_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "cwe_id"||key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==true&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "version" || key =="location" ||
+										key == "consequence" || key =="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key =="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "version" || key =="location" ||
+										key == "consequence" || key =="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key =="attacker"||key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==false&&sw3==true)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) {
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" || key == 'cve_id' 
+										) {
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==false&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';
+														}
+												}																
+											}
+										}
+											return "inactive";//前面CSS定义 .nodes circle.inactive	
+
+										}
+
+									}
+								}
+							}					
+						});
+						// 处理相邻的边line是否隐藏 注意 || 
+						d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+							for(let item of nodes)
+							{
+								if(item.id == id)
+								{
+									for (var key in item.properties)
+									{
+										if (sw1==false&&sw2==true&&sw3==true)
+										{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&d.type!=='cwe number') 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if(sw1==true&&sw2==false&&sw3==true){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "version" && d.type!=="location" &&
+										d.type !== "consequence" && d.type!=="happened scenario" &&
+										d.type !== "cause" && key!=="triggering operation" &&
+										d.type !== "related issue" && d.type!=="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+
+									}
+									else if (sw1==true&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "update date" && d.type!=="publish date" &&
+										d.type !== "score" && d.type!=="project" &&
+										d.type !== "vulnerability classification" && d.type!=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==true&&sw2==false&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "cwe number"
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "version" || d.type =="location" ||
+										d.type == "consequence" || d.type =="happened scenario" ||
+										d.type == "cause" || d.type=="triggering operation" ||
+										d.type == "related issue" || d.type =="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==true)
+									{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "update date" || d.type=="publish date" ||
+										d.type == "score" || d.type=="project" ||
+										d.type == "vulnerability classification" || d.type=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										}
+										 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==false){
+										return 'inactive';
+									}
+
+									else {
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+
+									}
+									}
+								}
+							}
+						});
+						 // 只显示之间相连的关系名
+						 d3.select("#svg1 .linetexts")
+						 .selectAll('text')
+						 .attr('class', function(d) 
+						 {
+							for(let item of nodes)
+							{
+								if(item.id == id)
+								{
+									for (var key in item.properties)
+									{
+										if (sw1==false&&sw2==true&&sw3==true)
+										{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&d.type!=='cwe number') 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if(sw1==true&&sw2==false&&sw3==true){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "version" && d.type!=="location" &&
+										d.type !== "consequence" && d.type!=="happened scenario" &&
+										d.type !== "cause" && key!=="triggering operation" &&
+										d.type !== "related issue" && d.type!=="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+
+									}
+									else if (sw1==true&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "update date" && d.type!=="publish date" &&
+										d.type !== "score" && d.type!=="project" &&
+										d.type !== "vulnerability classification" && d.type!=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==true&&sw2==false&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "cwe number"
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "version" || d.type =="location" ||
+										d.type == "consequence" || d.type =="happened scenario" ||
+										d.type == "cause" || d.type=="triggering operation" ||
+										d.type == "related issue" || d.type =="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==true)
+									{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "update date" || d.type=="publish date" ||
+										d.type == "score" || d.type=="project" ||
+										d.type == "vulnerability classification" || d.type=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										}
+										 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==false){
+										d3.select(this).attr('fill-opacity', 0);
+									}
+
+									else {
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+
+									}
+									}
+									
+									
+								}
+							}
+								
+						})
+					}
+				});
+				// 鼠标移开还原原图，显示所有隐藏的点及边
+				$('#svg1').on('mouseleave', '.nodes circle', function(event) {
+					//return '';
+					if (!dragging){
+						
+					}
+			});
+					
+
+				// 鼠标进入文本显示相邻节点及边
+				$('#svg1').on('mouseenter', '.texts text', function(event) {
+					
+					// console.log(event)
+					// 通过变量dragging保证拖动鼠标时，其状态不受影响，从而改变图形
+					// 鼠标没有拖动才能处理事件
+					if (!dragging) {
+						// 获取被选中元素的名字
+						var name = $(this).attr("name");
+
+						//console.log(name)
+						var id = $(this).attr("id");
+						// 设置#info h4样式的颜色为该节点的颜色，文本为该节点name
+						// $(this).attr('fill')表示当前悬浮圆的填充色
+						$('#info h4').css('color', $(this).attr('fill')).text(name);
+						// 每次点击添加属性前把上次显示的信息去除，否则会不断叠加
+						$('#info p').remove();
+						// 遍历查找id对应的属性
+						for (let item of nodes) {
+							if (item.id == id) {
+								for (var key in item.properties)
+									//显示值及其字段名字
+									$('#info').append('<p><span>' + key + '</span>' + item.properties[key] +
+										'</p>');
+							}
+						}
+						// 选择#svg1 .nodes中所有的circle，再增加个class
+						d3.select('#svg1 .texts').selectAll('text').attr('class', function(d) {
+							for(let item of nodes){
+								if(item.id == id){
+									for (var key in item.properties)
+									{
+										if (d.properties[key] == name) 
+											{
+						    						return '';
+							 				}
+										else{
+											for (var i = 0; i < links.length; i++) 
+											{
+												if (sw1==false&&sw2==true&&sw3==true)
+												{
+												
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key!=='cwe_id'){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key!=='cwe_id'){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==false&&sw3==true)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key !== "version" && key!=="location" &&
+										key !== "consequence" && key!=="happened_scenario" &&
+										key !== "cause" && key!=="triggering_operation" &&
+										key !== "related_issue" && key!=="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key !== "version" && key!=="location" &&
+										key !== "consequence" && key!=="happened_scenario" &&
+										key !== "cause" && key!=="triggering_operation" &&
+										key !== "related_issue" && key!=="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==true&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key !== "update_date" && key!=="publish_date" &&
+										key !== "score" && key!=="project" &&
+										key !== "vulnerability_classification" && key!=="commit_id" 
+										){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key !== "update_date" && key!=="publish_date" &&
+										key !== "score" && key!=="project" &&
+										key !== "vulnerability_classification" && key!=="commit_id" 
+										){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==true&&sw2==false&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "cwe_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "cwe_id"||key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==true&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "version" || key =="location" ||
+										key == "consequence" || key =="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key =="attacker"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "version" || key =="location" ||
+										key == "consequence" || key =="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key =="attacker"||key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==false&&sw3==true)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) {
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" || key == 'cve_id' 
+										) {
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else if (sw1==false&&sw2==false&&sw3==false)
+												{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															if(key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															if(key == "cve_id"){
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';}
+														}
+														
+												}
+												}
+												else{
+													if (links[i]['source'].properties[key] == name && links[i]['target'].id == d.id) 
+												{																											
+															for (var key in links[i]['target'].properties){
+															//显示值及其字段名字
+															
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['target'].properties[key] +
+															'</p>');																																				
+															return '';
+														}
+												}
+												if (links[i]['target'].properties[key] == name && links[i]['source'].id == d.id) 
+												{
+													for (var key in links[i]['source'].properties){
+															//显示值及其字段名字
+															
+															$('#info').append('<p><span>' + key + '</span>' + links[i]['source'].properties[key] +
+															'</p>');																																				
+															return '';
+														}
+												}																
+											}
+										}
+											return "inactive";//前面CSS定义 .nodes circle.inactive	
+
+										}
+
+									}
+								}
+							}					
+						});
+						// 处理相邻的边line是否隐藏 注意 || 
+						d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+							for(let item of nodes)
+							{
+								if(item.id == id)
+								{
+									for (var key in item.properties)
+									{
+										if (sw1==false&&sw2==true&&sw3==true)
+										{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&d.type!=='cwe number') 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if(sw1==true&&sw2==false&&sw3==true){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "version" && d.type!=="location" &&
+										d.type !== "consequence" && d.type!=="happened scenario" &&
+										d.type !== "cause" && key!=="triggering operation" &&
+										d.type !== "related issue" && d.type!=="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+
+									}
+									else if (sw1==true&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "update date" && d.type!=="publish date" &&
+										d.type !== "score" && d.type!=="project" &&
+										d.type !== "vulnerability classification" && d.type!=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==true&&sw2==false&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "cwe number"
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "version" || d.type =="location" ||
+										d.type == "consequence" || d.type =="happened scenario" ||
+										d.type == "cause" || d.type=="triggering operation" ||
+										d.type == "related issue" || d.type =="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==true)
+									{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "update date" || d.type=="publish date" ||
+										d.type == "score" || d.type=="project" ||
+										d.type == "vulnerability classification" || d.type=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										}
+										 
+										else 
+										{
+											return 'inactive';
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==false){
+										return 'inactive';
+									}
+
+									else {
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)) 
+										{
+											//console.log(d.source.properties[key])
+											return '';
+										} 
+										else 
+										{
+											return 'inactive';
+										}
+
+									}
+									}
+								}
+							}
+						});
+						 // 只显示之间相连的关系名
+						 d3.select("#svg1 .linetexts")
+						 .selectAll('text')
+						 .attr('class', function(d) 
+						 {
+							for(let item of nodes)
+							{
+								if(item.id == id)
+								{
+									for (var key in item.properties)
+									{
+										if (sw1==false&&sw2==true&&sw3==true)
+										{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&d.type!=='cwe number') 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if(sw1==true&&sw2==false&&sw3==true){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "version" && d.type!=="location" &&
+										d.type !== "consequence" && d.type!=="happened scenario" &&
+										d.type !== "cause" && key!=="triggering operation" &&
+										d.type !== "related issue" && d.type!=="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+
+									}
+									else if (sw1==true&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type !== "update date" && d.type!=="publish date" &&
+										d.type !== "score" && d.type!=="project" &&
+										d.type !== "vulnerability classification" && d.type!=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==true&&sw2==false&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "cwe number"
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==true&&sw3==false){
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "version" || d.type =="location" ||
+										d.type == "consequence" || d.type =="happened scenario" ||
+										d.type == "cause" || d.type=="triggering operation" ||
+										d.type == "related issue" || d.type =="attacker")) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==true)
+									{
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)&&(d.type == "update date" || d.type=="publish date" ||
+										d.type == "score" || d.type=="project" ||
+										d.type == "vulnerability classification" || d.type=="commit id" 
+										)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										}
+										 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+									}
+									else if (sw1==false&&sw2==false&&sw3==false){
+										d3.select(this).attr('fill-opacity', 0);
+									}
+
+									else {
+										if ((d.source.properties[key] == name || d.target.properties[key] == name)) 
+										{
+											//console.log(d.source.properties[key])
+											d3.select(this).attr('fill-opacity', 1);
+										} 
+										else 
+										{
+											d3.select(this).attr('fill-opacity', 0);
+										}
+
+									}
+									}
+									
+									
+								}
+							}
+								
+						})
+					}
+				});
+				// 鼠标移除文本还原相应节点及边
+				$('#svg1').on('mouseleave', '.texts text', function(event) {
+					if(!dragging){}
+			});					
+
+				// 搜索框中输入内容则响应该事件
+				// keyup按键敲击响应event
+				$('#search input').keyup(function(event) {
+					// 如果Input值是空的显示所有的圆和线(没有进行筛选)
+					if ($(this).val() == '') {
+							d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					}
+					// 否则判断判断三个元素是否等于name值，等于则显示该值
+					else {
+						var name = $(this).val();
+				
+						// 搜索所有的节点
+						d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d) {
+							// 输入节点id的小写等于name则显示，否则隐藏
+									for (var key in d.properties)
+									{
+										if (d.properties[key].toLowerCase().indexOf(name.toLowerCase()) >= 0) 
+											{
+												//console.log(d.properties[key])
+						    						return '';
+							 				}
+										else{
+											// for (var i = 0; i < links.length; i++) 
+											// {
+											// 	for(var key1 in links[i]['source'].properties)
+											// 	{
+											// // 如果links的起点等于name，并且终点等于正在处理的则显示
+											// 	if ((links[i]['source'].properties[key1].indexOf(name) >= 0) && 
+											// 	    (links[i]['target'].id == d.id)) 
+											// 	{
+											// 				return '';
+											// 	}
+												
+											// 	}
+											// 	for(var key2 in links[i]['target'].properties){
+												
+											// 	if ((links[i]['target'].properties[key2].indexOf(name) >= 0) && 
+											// 	    (links[i]['source'].id == d.id)) 
+											// 	{
+											// 				return '';
+											// 	}
+											// 	//else return "inactive";
+											// }
+											// 	//return "inactive";//前面CSS定义 .nodes circle.inactive
+											// }
+											return "inactive";
+
+										}
+
+									}
+								
+							
+						});
+						// 搜索texts
+						d3.select('#svg1 .texts').selectAll('text').attr('class', function(d) {
+							for (var key in d.properties)
+									{
+										if (d.properties[key].toLowerCase().indexOf(name.toLowerCase()) >= 0) 
+											{
+						    						return '';
+							 				}
+										else{
+											// for (var i = 0; i < links.length; i++) 
+											// {
+											// // 如果links的起点等于name，并且终点等于正在处理的则显示
+											// 	if ((links[i]['source'].properties[key].indexOf(name) >= 0) && 
+											// 	    (links[i]['target'].id == d.id)) 
+											// 	{
+											// 				return '';
+											// 	}
+											// 	if ((links[i]['target'].properties[key].indexOf(name) >= 0) && 
+											// 	    (links[i]['source'].id == d.id)) 
+											// 	{
+											// 				return '';
+											// 	}
+						
+											// }
+											return "inactive";//前面CSS定义 .nodes circle.inactive	
+
+										}
+
+									}
+
+						});
+						// 搜索links
+						// 显示相的邻边 注意 || 
+						// name=$(this).val()：名字为键盘输入的内容
+						// d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+						// 	if ((d.source.properties.name.indexOf(name) >= 0) ||
+						// 		(d.target.properties.name.indexOf(name) >= 0)
+						// 	) {
+						// 		return '';
+						// 	} else {
+						// 		return 'inactive'; //隐藏
+						// 	}
+						// });
+						d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+							// for(var key1 in d.source.properties)
+							// 					{
+							// 				// 如果links的起点等于name，并且终点等于正在处理的则显示
+							// 					if ((d.source.properties[key1].indexOf(name) >= 0)) 
+							// 					{
+							// 								return '';
+							// 					}
+							// 					else return 'inactive';
+							// 					}
+							// for(var key2 in d.target.properties)
+							// {
+												
+							// 					if ((d.target.properties[key2].indexOf(name) >= 0)) 
+							// 					{
+							// 								return '';
+							// 					}
+							// 					else return 'inactive';
+							// }
+							return 'inactive';
+
+                					
+            					});
+						d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					}
+				});
+
+				// 如果用删除键删除了
+				// 点击到搜索框内
+				$('#search input').bind('click', function(e) { 
+				if ($('#search input').val() == '') {
+					// d3.select('#svg1 .texts').selectAll('text').attr('class', '');;
+					// d3.select('#svg1 .nodes').selectAll('circle').attr('class', '');;
+					// d3.select('#svg1 .links').selectAll('line').attr('class', '');;
+					// d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+						d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+				}
+				})
+				// 点击到搜索框外
+				$('#search input').bind('blur', function(e) { 
+				if ($('#search input').val() == '') {
+					// d3.select('#svg1 .texts').selectAll('text').attr('class', '');;
+					// d3.select('#svg1 .nodes').selectAll('circle').attr('class', '');;
+					// d3.select('#svg1 .links').selectAll('line').attr('class', '');;
+					// d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+						d3.select("#svg1 .linetexts").selectAll('text').attr('fill-opacity', 0);
+					d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+								//console.log(key)
+								if (key == "cve_id") 
+								{
+									//console.log(key)
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+					d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+					//console.log(d.source.label)
+						if ((d.source.label == "CWE ID" || d.target.label == "CWE ID") && sw1 == false) {
+							return 'inactive';
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "version" || d.source.label=="location" ||
+						d.source.label == "consequence" || d.source.label=="happened scenario" ||
+						d.source.label == "cause" || d.source.label=="triggering operation" ||
+						d.source.label == "related issue" || d.source.label=="attacker" )
+						          ||
+						(
+						d.target.label == "version" || d.target.label=="location" ||
+						d.target.label == "consequence" || d.target.label=="happened scenario" ||
+						d.target.label == "cause" || d.target.label=="triggering operation" ||
+						d.target.label == "related issue" || d.target.label=="attacker" )
+						) 
+				           && sw2 == false)
+						{
+							return 'inactive';
+						
+						}
+						else if ( 
+							(
+								(
+						d.source.label == "update date" || d.source.label=="publish date" ||
+						d.source.label == "score" || d.source.label=="project" ||
+						d.source.label == "vulnerability classification" || d.source.label=="commit id" ) 
+						||
+						(
+					    d.target.label == "update date" || d.target.label=="publish date" ||
+						d.target.label == "score" || d.target.label=="project" ||
+						d.target.label == "vulnerability classification" || d.target.label=="commit id")
+						)
+							&& sw3 == false)
+						{
+							return 'inactive';
+						}
+						else{
+							return '';
+						}
+					});
+					d3.select('#svg1 .texts').selectAll('text').attr('class', function(d){
+							// 当前选中类型实体显示
+							for (var key in d.properties)
+							{
+
+								if (key == "cve_id") 
+								{
+									
+									return '';
+								}
+								if (key == "cwe_id" && sw1 == true) 
+								{
+									//console.log(key)
+									return '';
+								}
+								else if ( (key == "version" || key=="location" ||
+										key == "consequence" || key=="happened_scenario" ||
+										key == "cause" || key=="triggering_operation" ||
+										key == "related_issue" || key=="attacker" ) 
+										&& sw2 == true){
+									return '';
+								}
+								else if ( (key == "update_date" || key=="publish_date" ||
+										key == "score" || key=="project" ||
+										key == "vulnerability_classification" || key=="commit_id" 
+										) 
+										&& sw3 == true){
+									return '';
+								}
+								else{
+									return 'inactive'
+									}																			
+							}			
+            		});
+				}
+				})
+
+			});
+		</script>
+	</body>
+</html>
