@@ -1,4 +1,7 @@
 # Fine-grained Named Entity Recognition and Knowledge Graph Construction
+
+**Paper published** at https://dl.acm.org/doi/abs/10.1145/3540250.3558920
+
 **cve-ner**: Fine-grained Named Entity Recognition
 
 **Neo4j-D3-VKG** :Vulnerability knowledge graph visualization
@@ -6,7 +9,7 @@
 
 ## 1.1 Project Introduction
 
-This is my advanced machine learning project, the system is defined as a platform for extracting knowledge from the vulnerability descriptions in the current mainstream vulnerability database CVE and visualizing the results of the extraction. The visualization results are displayed in a knowledge graph, and the value of vulnerability information is deeply explored. It can be analyzed from the time dimension, space dimension, and vulnerability field dimensions, etc.....
+This is my machine learning project, the system is defined as a platform for extracting knowledge from the vulnerability descriptions in the current mainstream vulnerability database CVE and visualizing the results of the extraction. The visualization results are displayed in a knowledge graph, and the value of vulnerability information is deeply explored. It can be analyzed from the time dimension, space dimension, and vulnerability field dimensions, etc.....
 
 For example, the text below is a description of CVE-2009-1194, the description is from "http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-1194"
 
